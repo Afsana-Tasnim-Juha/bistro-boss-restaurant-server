@@ -50,6 +50,23 @@ async function run() {
             res.send({ token });
         })
 
+        // Mmiddlewares
+
+        const verifyToken = (req, res, next) => {
+            console.log('inside verify token', req.headers.authorization);
+            if (!req.headers.authorization)
+                return res.status(401).send({ message: 'forbidden access' });
+            const token = req.headers.authorization.split(' ')[1];
+
+            jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+                if (err) {
+                    return res.status(401).send({ message: 'forbidden access' })
+                }
+                req.decoded = decoded;
+                next();
+            })
+        }
+
         //menu related apis
         app.get('/menu', async (req, res) => {
             const result = await menuCollection.find().toArray();
@@ -81,8 +98,7 @@ async function run() {
 
         //users related API
 
-
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyToken, async (req, res) => {
 
             const result = await userCollection.find().toArray();
             res.send(result);
